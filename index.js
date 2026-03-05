@@ -11,11 +11,17 @@ dotenv.config();
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Caesar Cipher functions
+/**
+ * CAESAR CIPHER FUNCTIONS
+ * Implementa el algoritmo de cifrado César para codificar y decodificar mensajes
+ */
+
+// Normaliza el desplazamiento al rango 0-25
 function normalizeShift(n) {
     return ((n % 26) + 26) % 26;
 }
 
+// Codifica un texto usando Caesar Cipher
 function encodeCaesar(text, shift) {
     const s = normalizeShift(shift);
     let result = '';
@@ -52,21 +58,42 @@ function decodeCaesar(text, shift) {
     return encodeCaesar(text, -shift);
 }
 
+/**
+ * CLIENTE DE WHATSAPP
+ * Inicializa el cliente de WhatsApp Web con autenticación local
+ */
 const client = new Client({
     authStrategy: new LocalAuth()
 });
 
+/**
+ * EVENTO: Generar código QR
+ * Muestra el código QR en la terminal para escanear con WhatsApp
+ */
 client.on("qr", (qr) => {
     qrcode.generate(qr, { small: true });
 });
 
+/**
+ * EVENTO: Cliente listo
+ * Se ejecuta cuando el bot se conecta exitosamente a WhatsApp
+ */
 client.on("ready", () => {
     console.log("Client is ready!");
 });
 
+/**
+ * EVENTO: Mensaje recibido
+ * Maneja todos los comandos y mensajes recibidos
+ */
 client.on('message', async (message) => {
     const messageBody = message.body.trim();
 
+    /**
+     * FUNCIONALIDAD: Conversión de Stickers a Imágenes
+     * Detecta automáticamente cuando alguien envía un sticker (WEBP)
+     * Lo convierte a PNG y lo devuelve como imagen
+     */
     // Handle sticker to image conversion
     if (message.hasMedia) {
         try {
@@ -102,7 +129,11 @@ client.on('message', async (message) => {
         }
     }
 
-    // Handle !cypher command (encrypt)
+    /**
+     * COMANDO: !cypher PALABRA SHIFT
+     * Encripta una palabra usando el cifrado César
+     * Ejemplo: !cypher HELLO 3 → KHOOR
+     */
     if (messageBody.toLowerCase().startsWith("!cypher ")) {
         const parts = messageBody.split(' ');
         if (parts.length !== 3) {
@@ -123,6 +154,11 @@ client.on('message', async (message) => {
         return;
     }
 
+    /**
+     * COMANDO: !decypher PALABRA SHIFT
+     * Desencripta una palabra usando el cifrado César (inverso)
+     * Ejemplo: !decypher KHOOR 3 → HELLO
+     */
     // Handle !decypher command (decrypt)
     if (messageBody.toLowerCase().startsWith("!decypher ")) {
         const parts = messageBody.split(' ');
@@ -144,6 +180,11 @@ client.on('message', async (message) => {
         return;
     }
 
+    /**
+     * COMANDO: ping
+     * Comando simple para verificar que el bot está activo
+     * Responde con: pong
+     */
     // Handle ping command
     if (message.body.toLowerCase() === "ping") {
         message.reply("pong");
@@ -159,7 +200,11 @@ client.on('message', async (message) => {
             return;
         }
 
-        // List of sensitive words
+        /**
+         * PALABRAS SENSIBLES (Responde con el nombre del usuario)
+         * Si el usuario pregunta por: gay, homosexual, puto, etc.
+         * El bot responde solo con el nombre del usuario que escribió
+         */
         const sensitiveWords = ['gay', 'homosexual', 'puto', 'putito', 'maricón', 'maricon', 'jochis', 'joto', 'jotito' ];
         const wordLower = word.toLowerCase();
         
@@ -183,7 +228,11 @@ client.on('message', async (message) => {
             return;
         }
 
-        // List of Valery words
+        /**
+         * PALABRAS ESPECIALES (Responde con "Valery")
+         * Si el usuario pregunta por: machukis, lencha, lesbiana
+         * El bot responde solo: Valery
+         */
         const valeryWords = ['machukis', 'lencha', 'lesbiana'];
         const hasValeryWord = valeryWords.some(val => 
             wordLower.includes(val)
@@ -194,6 +243,11 @@ client.on('message', async (message) => {
             return;
         }
 
+        /**
+         * COMANDO: definicion PALABRA
+         * Obtiene definiciones de cualquier palabra usando Gemini API
+         * Ejemplo: definicion Perro → Responde con la definición
+         */
         try {
             message.react('⏳');
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -211,6 +265,11 @@ client.on('message', async (message) => {
         return;
     }
 
+    /**
+     * COMANDO: karim
+     * Envía un sticker del sitio de memes
+     * Comando especial que descarga una imagen y la envía como sticker
+     */
     // Handle karim command
     if (message.body.toLowerCase() === "karim") {
         const url = "https://tse3.mm.bing.net/th/id/OIP.vdmvxlhs_lR3tHZrLUdFEwEsDI?rs=1&pid=ImgDetMain&o=7&rm=3";
@@ -230,4 +289,8 @@ client.on('message', async (message) => {
     }
 });
 
+/**
+ * INICIALIZACIÓN
+ * Conecta el bot a WhatsApp Web
+ */
 client.initialize();
